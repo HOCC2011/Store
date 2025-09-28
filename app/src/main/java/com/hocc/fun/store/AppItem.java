@@ -7,15 +7,20 @@ public class AppItem {
     private final String version;
     private final String provider;
     private final String buttonText;
+    private final String DownloadUrl;
 
-    public AppItem(String iconUrl, String appName, String version, String provider, String buttonText) {
+    public AppItem(String iconUrl, String appName, String version, String provider, String buttonText, String DownloadUrl) {
         this.iconUrl = iconUrl;
         this.appName = appName;
         this.version = version;
         this.provider = provider;
         this.buttonText = buttonText;
+        this.DownloadUrl = DownloadUrl;
     }
 
+    public String getDownloadUrl() {
+        return DownloadUrl;
+    }
     public String getIconUrl() {
         return iconUrl;
     }

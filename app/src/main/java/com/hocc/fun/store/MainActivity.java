@@ -94,7 +94,8 @@ public class MainActivity extends AppCompatActivity {
                     ButtonText = "Download";
                 }
                 String IconUrl = RepoUrl.replace("index.xml",  AppName + "/" + Version + ".png");
-                Applist.add(new AppItem(IconUrl, AppName, Version, RepoName, ButtonText));
+                String AppUrl = RepoUrl.replace("index.xml",  AppName + "/" + Version + ".apk");
+                Applist.add(new AppItem(IconUrl, AppName, Version, RepoName, ButtonText, AppUrl));
             }
         }
         AppListAdapter adapter = new AppListAdapter(Applist);

@@ -1,11 +1,15 @@
 package com.hocc.fun.store;
 
 // AppListAdapter.java
+import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
@@ -18,8 +22,6 @@ public class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.AppViewH
         this.appList = appList;
     }
 
-    // --- 1. ViewHolder Class ---
-    // Holds references to the views in your list item layout
     public static class AppViewHolder extends RecyclerView.ViewHolder {
         public ImageView appIcon;
         public TextView appName;
@@ -29,7 +31,6 @@ public class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.AppViewH
 
         public AppViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Link the Java variables to the IDs from your XML layout
             appIcon = itemView.findViewById(R.id.AppIcon);
             appName = itemView.findViewById(R.id.AppName);
             version = itemView.findViewById(R.id.Version);
@@ -38,8 +39,6 @@ public class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.AppViewH
         }
     }
 
-    // --- 2. onCreateViewHolder ---
-    // Inflates the layout (your XML) and creates the ViewHolder
     @NonNull
     @Override
     public AppViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -48,8 +47,6 @@ public class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.AppViewH
         return new AppViewHolder(view);
     }
 
-    // --- 3. onBindViewHolder ---
-    // Binds the data from the AppList to the views in the ViewHolder
     @Override
     public void onBindViewHolder(@NonNull AppViewHolder holder, int position) {
         AppItem currentItem = appList.get(position);
@@ -61,15 +58,28 @@ public class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.AppViewH
         holder.provider.setText(currentItem.getProvider());
         holder.button.setText(currentItem.getButtonText());
 
-        // Example: Add a click listener to the button
         holder.button.setOnClickListener(v -> {
-            // Handle the button click for this specific item
-            System.out.println("Clicked button for " + currentItem.getAppName());
+            if (holder.button.getText().toString().equals("Download") || holder.button.getText().toString().equals("Update")) {
+                String url = currentItem.getDownloadUrl();
+
+                // 1. Create an Intent to view the URI
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+
+                // 2. Parse the URL string into a Uri object
+                intent.setData(Uri.parse(url));
+
+                try {
+                    // 3. Start the Intent, which opens the default handler (Browser, etc.)
+                    holder.itemView.getContext().startActivity(intent);
+                } catch (Exception e) {
+                    // Handle case where no app can handle the intent (highly unlikely for a web URL)
+                    e.printStackTrace();
+                    // Optionally show a Toast message here
+                }
+            }
         });
     }
 
-    // --- 4. getItemCount ---
-    // Returns the total number of items
     @Override
     public int getItemCount() {
         return appList.size();
