@@ -29,7 +29,8 @@ android {
 }
 
 dependencies {
-
+    def work_version = "2.9.0" // Check for the latest stable version
+    implementation "androidx.work:work-runtime:$work_version"
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity

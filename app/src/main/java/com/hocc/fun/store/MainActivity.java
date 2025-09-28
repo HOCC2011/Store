@@ -1,8 +1,11 @@
 package com.hocc.fun.store;
 
+import static com.hocc.fun.store.VersionCheckWorker.KEY_REPO_NAME;
+import static com.hocc.fun.store.VersionCheckWorker.KEY_REPO_URL;
+
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -10,18 +13,21 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.Xml;
-import android.view.View;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Data;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 import org.xmlpull.v1.XmlPullParser;
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,8 +36,10 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
     List<AppItem> Applist = new ArrayList<>();
     RecyclerView recyclerView;
     ImageView reload;
+    ImageView repo;
+    private static final int REQUEST_CODE_POST_NOTIFICATIONS = 101;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -51,6 +61,15 @@ public class MainActivity extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
+        });
+
+        checkAndRequestNotificationPermission();
+        scheduleDailyVersionCheck("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main/index.xml");
+        scheduleDailyVersionCheck("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main/index.xml");
+
+        repo = findViewById(R.id.repo);
+        repo.setOnClickListener(view -> {
+
         });
 
         reload = findViewById(R.id.reload);
@@ -264,4 +283,74 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    private void scheduleDailyVersionCheck(String repoName, String repoUrl) {
+
+        // 1. Build the Input Data
+        Data inputData = new Data.Builder()
+                .putString(KEY_REPO_NAME, repoName)
+                .putString(KEY_REPO_URL, repoUrl)
+                .build();
+
+        // 2. Calculate the time until the next 2:00 AM
+        Calendar now = Calendar.getInstance();
+        Calendar twoAm = Calendar.getInstance();
+
+        // Set the target time to 2:00:00 AM
+        twoAm.set(Calendar.HOUR_OF_DAY, 2);
+        twoAm.set(Calendar.MINUTE, 0);
+        twoAm.set(Calendar.SECOND, 0);
+
+        // If the current time is past 2 AM, schedule it for 2 AM the next day
+        if (now.after(twoAm)) {
+            twoAm.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        // Calculate the difference (initial delay)
+        long initialDelay = twoAm.getTimeInMillis() - now.getTimeInMillis();
+        long initialDelayMinutes = TimeUnit.MILLISECONDS.toMinutes(initialDelay);
+
+        Log.d("DailyVersionCheck", "Daily check scheduled. First run in: " + initialDelayMinutes + " minutes.");
+
+        // 3. Create the Periodic Work Request
+        // WorkManager requires a minimum repeat interval of 15 minutes, we use 24 hours.
+        PeriodicWorkRequest versionCheckRequest =
+                new PeriodicWorkRequest.Builder(VersionCheckWorker.class,
+                        24, TimeUnit.HOURS)
+                        .setInitialDelay(initialDelayMinutes, TimeUnit.MINUTES)
+                        .setInputData(inputData) // Pass the name/URL to the worker
+                        .addTag("DailyVersionCheck")
+                        // Optional: require network connection for the download to succeed
+                        // .setConstraints(new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                        .build();
+
+        // 4. Enqueue the work
+        // KEEP: ensures that if the app is killed and restarted, the single daily task is maintained.
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "DailyVersionCheck",
+                ExistingPeriodicWorkPolicy.KEEP,
+                versionCheckRequest);
+    }
+
+    public void checkAndRequestNotificationPermission() {
+        // 1. Check if the device is running Android 13 (TIRAMISU) or higher
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+            // 2. Check if the POST_NOTIFICATIONS permission has been granted
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+
+                // Permission is already granted. Proceed with sending notifications.
+                // Example: sendNotification();
+
+            } else {
+
+                // Permission is NOT granted. Request it from the user.
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        REQUEST_CODE_POST_NOTIFICATIONS
+                );
+            }
+
+        }
+    }
 }
