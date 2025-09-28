@@ -2,36 +2,44 @@ package com.hocc.fun.store;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.Xml;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import org.xmlpull.v1.XmlPullParser;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     public HashMap<String, String[]> Apps = new HashMap<>();
-    public HashMap<Double, String> AppIndex = new HashMap<>();
-    TextView Text;
-    StringBuilder Data = new StringBuilder("");
+    public HashMap<String, ArrayList> RepoApps = new HashMap<>();
+    List<AppItem> Applist = new ArrayList<>();
+    RecyclerView recyclerView;
+    ImageView reload;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -44,30 +52,53 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        Text = findViewById(R.id.Text);
+
+        reload = findViewById(R.id.reload);
+        reload.setOnClickListener(view -> {
+            Toast.makeText(this, "Loading data...", Toast.LENGTH_LONG).show();
+            Applist.clear();
+            LoadRepo("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main/index.xml");
+            LoadRepo("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main/index.xml");
+        });
+
+        recyclerView = findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        Applist.clear();
         LoadRepo("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main/index.xml");
         LoadRepo("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main/index.xml");
         Log.d("Android Version", String.valueOf(Build.VERSION.SDK_INT));
     }
 
-    public void EditList() {
-        Data.setLength(0);
-        int AppNumber = Apps.size();
+    public void EditList(String RepoName, String RepoUrl) {
+        int AppNumber = RepoApps.get(RepoName).size();
         Log.d("App Number", String.valueOf(AppNumber));
         for (int i = 1; i <= AppNumber; i++) {
-            String AppName = AppIndex.get(Double.valueOf(i));
+            String AppName = (String) RepoApps.get(RepoName).get(i - 1);
             String PackageName = Apps.get(AppName)[0];
-            String Version = Apps.get(AppName)[1];
+            Log.d("PackageName", PackageName);
+            String Version = Apps.get(AppName)[1].replaceAll("\\s+", "");
             String SystemRequirment = Apps.get(AppName)[2];
-            String RepoName = Apps.get(AppName)[3];
             if (Build.VERSION.SDK_INT > Integer.valueOf(SystemRequirment)){
-                if (Data.length() > 0) {
-                    Data.append("\n\n");
+                String ButtonText = "null";
+                PackageManager pm = getPackageManager();
+                try {
+                    pm.getPackageInfo(PackageName.replaceAll("\\s+", ""), PackageManager.GET_ACTIVITIES);
+                    android.content.pm.PackageInfo packageInfo = pm.getPackageInfo(PackageName, PackageManager.GET_ACTIVITIES);
+                    if (packageInfo.versionName.replaceAll("\\s+", "").equals(Version)) {
+                        ButtonText = "Installed";
+                    } else {
+                        ButtonText = "Update";
+                    }
+                } catch (PackageManager.NameNotFoundException e) {
+                    ButtonText = "Download";
                 }
-                Data.append("Name: " + AppName + "\nPackage Name: " + PackageName + "\nVersion: " + Version + "\nSystem Requirment: " + SystemRequirment +"\nProvider: " + RepoName);
+                String IconUrl = RepoUrl.replace("index.xml",  AppName + "/" + Version + ".png");
+                Applist.add(new AppItem(IconUrl, AppName, Version, RepoName, ButtonText));
             }
         }
-        Text.setText(Data);
+        AppListAdapter adapter = new AppListAdapter(Applist);
+        recyclerView.setAdapter(adapter);
     }
 
     public void LoadRepo(String RepoName, String RepoUrl) {
@@ -76,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
             public void onDownloadComplete(boolean success) {
                 if (success) {
                     Log.i("App", "Download complete. Starting to parse XML.");
-                    LoadAppsData(RepoName, getApplicationContext());
+                    LoadAppsData(RepoName, RepoUrl, getApplicationContext());
                 } else {
                     // Handle download failure
                     Log.e("App", "Download failed.");
@@ -85,8 +116,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void LoadAppsData(String FileName, Context context) {
+    public void LoadAppsData(String FileName, String RepoUrl, Context context) {
         File file = new File(context.getFilesDir(), FileName + ".xml");
+        ArrayList<String> RepoAppList = new ArrayList<>();
 
         if (!file.exists()) {
             Log.e("XmlParser", "File not found: " + file.getAbsolutePath());
@@ -114,17 +146,12 @@ public class MainActivity extends AppCompatActivity {
                     String Version = "";
                     String SystemRequirment = "";
 
-                    Double IndexNumber = null;
                     while (parser.next() != XmlPullParser.END_TAG) {
                         if (parser.getEventType() != XmlPullParser.START_TAG) {
                             continue;
                         }
 
-                        if (Apps != null) {
-                            IndexNumber = Double.valueOf(Apps.size() + 1);
-                        } else {
-                            IndexNumber = Double.valueOf(1);
-                        }
+
                         String tagName = parser.getName();
                         if (tagName.equals("Name")) {
                             AppName = ReadTagContent(parser, "Name");
@@ -139,12 +166,13 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                     Apps.put(AppName, new String[]{PackageName, Version, SystemRequirment, FileName});
-                    AppIndex.put(IndexNumber, AppName);
+                    RepoAppList.add(AppName);
+                    RepoApps.put(FileName, RepoAppList);
                 } else {
                     Skip(parser);
                 }
             }
-            EditList();
+            EditList(FileName, RepoUrl);
         } catch (Exception e) {
             Log.e("XmlParser", "Error during XML parsing.", e);
         }
