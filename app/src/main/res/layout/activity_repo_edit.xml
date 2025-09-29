@@ -29,6 +29,7 @@
             android:scaleType="fitCenter"
             android:layout_marginEnd="16dp"
             android:layout_marginTop="16dp"
+            android:padding="2dp"
             android:importantForAccessibility="no"
             app:srcCompat="@drawable/add"
             tools:ignore="ImageContrastCheck"
