@@ -6,4 +6,7 @@
     </style>
 
     <style name="Theme.Store" parent="Base.Theme.Store" />
+    <style name="CustomAlertDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/background</item>
+    </style>
 </resources>
