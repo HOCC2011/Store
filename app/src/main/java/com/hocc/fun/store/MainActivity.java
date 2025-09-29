@@ -100,7 +100,9 @@ public class MainActivity extends AppCompatActivity {
             Log.d("PackageName", PackageName);
             String Version = Apps.get(AppName)[1].replaceAll("\\s+", "");
             String SystemRequirment = Apps.get(AppName)[2];
-            String Developer = Apps.get(AppName)[3];
+            String Provider = Apps.get(AppName)[3];
+            String Developer = Apps.get(AppName)[4];
+            Log.d("Developer", Developer);
             if (Build.VERSION.SDK_INT > Integer.valueOf(SystemRequirment)){
                 String ButtonText = "null";
                 PackageManager pm = getPackageManager();
@@ -117,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 String IconUrl = RepoUrl + "/" + AppName + "/" + Version + ".png";
                 String AppUrl = RepoUrl + "/" + AppName + "/" + Version + ".apk";
-                Applist.add(new AppItem(IconUrl, AppName, Version, Developer + " (" + RepoName + ")", ButtonText, AppUrl));
+                Applist.add(new AppItem(IconUrl, AppName, Version, Developer + " (" + Provider + ")", ButtonText, AppUrl));
             }
         }
         AppListAdapter adapter = new AppListAdapter(Applist);
