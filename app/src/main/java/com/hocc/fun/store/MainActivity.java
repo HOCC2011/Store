@@ -6,6 +6,7 @@ import static com.hocc.fun.store.VersionCheckWorker.KEY_REPO_URL;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -64,28 +65,29 @@ public class MainActivity extends AppCompatActivity {
         });
 
         checkAndRequestNotificationPermission();
-        scheduleDailyVersionCheck("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main/index.xml");
-        scheduleDailyVersionCheck("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main/index.xml");
+        scheduleDailyVersionCheck("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main");
+        scheduleDailyVersionCheck("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main");
 
         repo = findViewById(R.id.repo);
         repo.setOnClickListener(view -> {
-
+            Intent intent = new Intent(MainActivity.this, RepoEdit.class);
+            startActivity(intent);
         });
 
         reload = findViewById(R.id.reload);
         reload.setOnClickListener(view -> {
             Toast.makeText(this, "Loading data...", Toast.LENGTH_LONG).show();
             Applist.clear();
-            LoadRepo("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main/index.xml");
-            LoadRepo("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main/index.xml");
+            LoadRepo("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main");
+            LoadRepo("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main");
         });
 
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         Applist.clear();
-        LoadRepo("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main/index.xml");
-        LoadRepo("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main/index.xml");
+        LoadRepo("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main");
+        LoadRepo("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main");
         Log.d("Android Version", String.valueOf(Build.VERSION.SDK_INT));
     }
 
@@ -98,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d("PackageName", PackageName);
             String Version = Apps.get(AppName)[1].replaceAll("\\s+", "");
             String SystemRequirment = Apps.get(AppName)[2];
+            String Developer = Apps.get(AppName)[3];
             if (Build.VERSION.SDK_INT > Integer.valueOf(SystemRequirment)){
                 String ButtonText = "null";
                 PackageManager pm = getPackageManager();
@@ -112,9 +115,9 @@ public class MainActivity extends AppCompatActivity {
                 } catch (PackageManager.NameNotFoundException e) {
                     ButtonText = "Download";
                 }
-                String IconUrl = RepoUrl.replace("index.xml",  AppName + "/" + Version + ".png");
-                String AppUrl = RepoUrl.replace("index.xml",  AppName + "/" + Version + ".apk");
-                Applist.add(new AppItem(IconUrl, AppName, Version, RepoName, ButtonText, AppUrl));
+                String IconUrl = RepoUrl + "/" + AppName + "/" + Version + ".png";
+                String AppUrl = RepoUrl + "/" + AppName + "/" + Version + ".apk";
+                Applist.add(new AppItem(IconUrl, AppName, Version, Developer + " (" + RepoName + ")", ButtonText, AppUrl));
             }
         }
         AppListAdapter adapter = new AppListAdapter(Applist);
@@ -122,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void LoadRepo(String RepoName, String RepoUrl) {
-        DownloadXml(RepoName, RepoUrl, getApplicationContext(), new DownloadListener() {
+        DownloadXml(RepoName, RepoUrl + "/index.xml", getApplicationContext(), new DownloadListener() {
             @Override
             public void onDownloadComplete(boolean success) {
                 if (success) {
@@ -165,6 +168,7 @@ public class MainActivity extends AppCompatActivity {
                     String PackageName = "";
                     String Version = "";
                     String SystemRequirment = "";
+                    String Developer = "";
 
                     while (parser.next() != XmlPullParser.END_TAG) {
                         if (parser.getEventType() != XmlPullParser.START_TAG) {
@@ -181,11 +185,13 @@ public class MainActivity extends AppCompatActivity {
                             Version = ReadTagContent(parser, "Version");
                         } else if (tagName.equals("SysVersion")) {
                             SystemRequirment = ReadTagContent(parser, "SysVersion");
+                        } else if (tagName.equals("Developer")) {
+                            Developer = ReadTagContent(parser, "Developer");
                         } else {
                             Skip(parser);
                         }
                     }
-                    Apps.put(AppName, new String[]{PackageName, Version, SystemRequirment, FileName});
+                    Apps.put(AppName, new String[]{PackageName, Version, SystemRequirment, FileName, Developer});
                     RepoAppList.add(AppName);
                     RepoApps.put(FileName, RepoAppList);
                 } else {
@@ -288,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
         // 1. Build the Input Data
         Data inputData = new Data.Builder()
                 .putString(KEY_REPO_NAME, repoName)
-                .putString(KEY_REPO_URL, repoUrl)
+                .putString(KEY_REPO_URL, repoUrl + "/index.xml")
                 .build();
 
         // 2. Calculate the time until the next 2:00 AM

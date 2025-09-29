@@ -3,7 +3,7 @@
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
     <color name="orange_light">#FFB17B</color>
-    <color name="bg_color">#FCEAE3</color>
+    <color name="bg_color">#FFFFFF</color>
     <color name="fg_color">#FFB17B</color>
     <color name="on_fg_color">#FFFFFF</color>
 </resources>
