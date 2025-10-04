@@ -65,8 +65,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         checkAndRequestNotificationPermission();
-        scheduleDailyVersionCheck("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main");
-        scheduleDailyVersionCheck("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main");
 
         repo = findViewById(R.id.repo);
         repo.setOnClickListener(view -> {
@@ -78,8 +76,7 @@ public class MainActivity extends AppCompatActivity {
         reload.setOnClickListener(view -> {
             Toast.makeText(this, "Loading data...", Toast.LENGTH_LONG).show();
             Applist.clear();
-            LoadRepo("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main");
-            LoadRepo("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main");
+            GetRepos();
         });
 
         recyclerView = findViewById(R.id.recyclerView);
@@ -103,12 +100,17 @@ public class MainActivity extends AppCompatActivity {
                     .putBoolean("isSetUpFinished", true)
                     .apply();
         }
+        GetRepos();
+        Log.d("Android Version", String.valueOf(Build.VERSION.SDK_INT));
+    }
+    public void GetRepos() {
         int RepoCount = getSharedPreferences("Repositories", MODE_PRIVATE).getInt("RepoCount", 0);
         for (int i = 1; i <= RepoCount; i++) {
             String RepoName = getSharedPreferences("Repositories", MODE_PRIVATE).getString(String.valueOf(i), null);
             if (RepoName != null) {
                 String RepoUrl = getSharedPreferences("Repositories", MODE_PRIVATE).getString(RepoName, null);
                 if (RepoUrl != null) {
+                    scheduleDailyVersionCheck(RepoName, RepoUrl);
                     LoadRepo(RepoName, RepoUrl);
                 } else {
                     Log.e("Error", "Repo url is null");
@@ -117,7 +119,6 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("Error", "Repo name is null");
             }
         }
-        Log.d("Android Version", String.valueOf(Build.VERSION.SDK_INT));
     }
 
     public void EditList(String RepoName, String RepoUrl) {
@@ -355,15 +356,13 @@ public class MainActivity extends AppCompatActivity {
                         24, TimeUnit.HOURS)
                         .setInitialDelay(initialDelayMinutes, TimeUnit.MINUTES)
                         .setInputData(inputData) // Pass the name/URL to the worker
-                        .addTag("DailyVersionCheck")
-                        // Optional: require network connection for the download to succeed
-                        // .setConstraints(new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                        .addTag("DailyVersionCheck_" + repoName)
                         .build();
 
         // 4. Enqueue the work
         // KEEP: ensures that if the app is killed and restarted, the single daily task is maintained.
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "DailyVersionCheck",
+                "DailyVersionCheck_" + repoName,
                 ExistingPeriodicWorkPolicy.KEEP,
                 versionCheckRequest);
     }

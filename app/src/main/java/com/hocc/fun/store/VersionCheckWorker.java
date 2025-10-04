@@ -9,6 +9,9 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresPermission;
 import androidx.work.Data;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 import android.os.Build;
@@ -23,7 +26,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -145,7 +150,6 @@ public class VersionCheckWorker extends Worker {
         }
         return false; // App is installed and up-to-date, or error occurred
     }
-
     private String ReadTagContent(XmlPullParser parser, String tagName) throws Exception {
         parser.require(XmlPullParser.START_TAG, null, tagName);
         String text = "";
@@ -189,7 +193,6 @@ public class VersionCheckWorker extends Worker {
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         notificationManager.notify(1002, builder.build());
     }
-
     private void createNotificationChannel() {
         // Check if the device is running Android Oreo or later
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

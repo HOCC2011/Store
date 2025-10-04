@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -18,9 +17,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -28,9 +25,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
+import androidx.work.WorkManager;
 import org.xmlpull.v1.XmlPullParser;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -67,7 +63,6 @@ public class RepoEdit extends AppCompatActivity {
         LoadAndSetList();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onResume() {
         super.onResume();
@@ -116,7 +111,12 @@ public class RepoEdit extends AppCompatActivity {
                 .remove(String.valueOf(CurrentRepoCount + 1))
                 .remove(RepoName)
                 .apply();
+        cancelDailyVersionCheck(this.getApplicationContext(), RepoName);
         LoadAndSetList();
+    }
+    public void cancelDailyVersionCheck(Context context, String RepoName) {
+        WorkManager.getInstance(context).cancelAllWorkByTag("DailyVersionCheck_" + RepoName);
+        Log.d("DailyVersionCheck", "Daily version check work for " + RepoName + " has been cancelled.");
     }
     public void WriteRepo(String RepoURL, String RepoName) {
         int CurrentRepoCount = getSharedPreferences("Repositories", MODE_PRIVATE).getInt("RepoCount", 0);
