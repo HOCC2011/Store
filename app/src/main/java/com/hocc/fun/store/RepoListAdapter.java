@@ -1,6 +1,11 @@
 package com.hocc.fun.store;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.os.CountDownTimer;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,14 +65,14 @@ public class RepoListAdapter extends RecyclerView.Adapter<RepoListAdapter.RepoVi
             if (holder.repoName.getText().toString().equals("HOCC")) {
                 Toast.makeText(view.getContext(), "This repository cannot be removed.", Toast.LENGTH_LONG).show();
             } else {
-                RemoveRepoDialog(view);
+                RemoveRepoDialog(view.getContext(), view, holder.repoName.getText().toString());
             }
             return true;
         });
     }
 
     @SuppressLint("MissingInflatedId")
-    public void RemoveRepoDialog(View view){
+    public void RemoveRepoDialog(Context context, View view, String RepoName){
         final AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext(), R.style.CustomAlertDialog);
         ViewGroup viewGroup = view.findViewById(android.R.id.content);
         View dialogView = LayoutInflater.from(view.getContext()).inflate(R.layout.remove_repo_dia, viewGroup, false);
@@ -76,7 +81,9 @@ public class RepoListAdapter extends RecyclerView.Adapter<RepoListAdapter.RepoVi
         builder.setView(dialogView);
         final AlertDialog alertDialog = builder.create();
         remove.setOnClickListener(v -> {
-
+            Intent intent = new Intent("com.hocc.fun.store.removerepo").setPackage(context.getPackageName());
+            intent.putExtra("RepoName", RepoName);
+            context.sendBroadcast(intent);
             alertDialog.dismiss();
         });
         cancel.setOnClickListener(v -> {alertDialog.dismiss();});

@@ -86,8 +86,37 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         Applist.clear();
-        LoadRepo("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main");
-        LoadRepo("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main");
+        if (getSharedPreferences("General", MODE_PRIVATE).getBoolean("isSetUpFinished", false) == false) {
+            int CurrentRepoCount = getSharedPreferences("Repositories", MODE_PRIVATE).getInt("RepoCount", 0);
+            this.getSharedPreferences("Repositories", MODE_PRIVATE).edit()
+                    .putInt("RepoCount", CurrentRepoCount + 1)
+                    .putString(String.valueOf(CurrentRepoCount + 1), "HOCC")
+                    .putString("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main")
+                    .apply();
+            CurrentRepoCount = getSharedPreferences("Repositories", MODE_PRIVATE).getInt("RepoCount", 0);
+            this.getSharedPreferences("Repositories", MODE_PRIVATE).edit()
+                    .putInt("RepoCount", CurrentRepoCount + 1)
+                    .putString(String.valueOf(CurrentRepoCount + 1), "Test")
+                    .putString("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main")
+                    .apply();
+            this.getSharedPreferences("General", MODE_PRIVATE).edit()
+                    .putBoolean("isSetUpFinished", true)
+                    .apply();
+        }
+        int RepoCount = getSharedPreferences("Repositories", MODE_PRIVATE).getInt("RepoCount", 0);
+        for (int i = 1; i <= RepoCount; i++) {
+            String RepoName = getSharedPreferences("Repositories", MODE_PRIVATE).getString(String.valueOf(i), null);
+            if (RepoName != null) {
+                String RepoUrl = getSharedPreferences("Repositories", MODE_PRIVATE).getString(RepoName, null);
+                if (RepoUrl != null) {
+                    LoadRepo(RepoName, RepoUrl);
+                } else {
+                    Log.e("Error", "Repo url is null");
+                }
+            } else {
+                Log.e("Error", "Repo name is null");
+            }
+        }
         Log.d("Android Version", String.valueOf(Build.VERSION.SDK_INT));
     }
 
@@ -154,10 +183,10 @@ public class MainActivity extends AppCompatActivity {
             XmlPullParser parser = Xml.newPullParser();
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(inputStream, null);
-            parser.nextTag(); // Advance to the root tag <List>
+            parser.nextTag(); // Advance to the root tag <Repository>
 
             // --- Logic from readList integrated here ---
-            parser.require(XmlPullParser.START_TAG, null, "List");
+            parser.require(XmlPullParser.START_TAG, null, "Repository");
 
             while (parser.next() != XmlPullParser.END_TAG) {
                 if (parser.getEventType() != XmlPullParser.START_TAG) {
