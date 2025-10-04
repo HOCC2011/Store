@@ -62,11 +62,7 @@ public class RepoListAdapter extends RecyclerView.Adapter<RepoListAdapter.RepoVi
         holder.repoUrl.setText(currentItem.getRepoUrl());
 
         holder.main.setOnLongClickListener(view -> {
-            if (holder.repoName.getText().toString().equals("HOCC")) {
-                Toast.makeText(view.getContext(), "This repository cannot be removed.", Toast.LENGTH_LONG).show();
-            } else {
-                RemoveRepoDialog(view.getContext(), view, holder.repoName.getText().toString());
-            }
+            RemoveRepoDialog(view.getContext(), view, holder.repoName.getText().toString());
             return true;
         });
     }
