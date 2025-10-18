@@ -105,13 +105,36 @@ public class RepoEdit extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
     }
     public void RemoveRepo(String RepoName) {
+        int RemovingRepoIndex = getSharedPreferences("Repositories", MODE_PRIVATE).getInt("RepoIndex_" + RepoName, 0);
         int CurrentRepoCount = getSharedPreferences("Repositories", MODE_PRIVATE).getInt("RepoCount", 0);
-        getSharedPreferences("Repositories", MODE_PRIVATE).edit() // All in string
-                .putInt("RepoCount", CurrentRepoCount - 1)
-                .remove(String.valueOf(CurrentRepoCount + 1))
-                .remove(RepoName)
-                .apply();
-        cancelDailyVersionCheck(this.getApplicationContext(), RepoName);
+        if (CurrentRepoCount > RemovingRepoIndex) {
+            int RemainingRepos = CurrentRepoCount - RemovingRepoIndex;
+            getSharedPreferences("Repositories", MODE_PRIVATE).edit() // All in string
+                    .putInt("RepoCount", CurrentRepoCount - 1)
+                    .remove(String.valueOf(RemovingRepoIndex))
+                    .remove("RepoIndex_" + RepoName)
+                    .remove(RepoName)
+                    .apply();
+            cancelDailyVersionCheck(this.getApplicationContext(), RepoName);
+            for (int i = 1; i <= RemainingRepos; i++) {
+                int RepoNumber = RemovingRepoIndex + i;
+                String EditingRepoName = getSharedPreferences("Repositories", MODE_PRIVATE).getString(String.valueOf(RepoNumber), null);
+                String EditingRepoURL = getSharedPreferences("Repositories", MODE_PRIVATE).getString(EditingRepoName, null);
+                getSharedPreferences("Repositories", MODE_PRIVATE).edit() // All in string
+                        .putInt("RepoIndex_" + RepoName, RepoNumber - 1)
+                        .putString(String.valueOf(RepoNumber - 1), EditingRepoName)
+                        .putString(EditingRepoName, EditingRepoURL)
+                        .apply();
+            }
+        } else {
+            getSharedPreferences("Repositories", MODE_PRIVATE).edit() // All in string
+                    .putInt("RepoCount", CurrentRepoCount - 1)
+                    .remove("RepoIndex_" + RepoName)
+                    .remove(String.valueOf(CurrentRepoCount + 1))
+                    .remove(RepoName)
+                    .apply();
+            cancelDailyVersionCheck(this.getApplicationContext(), RepoName);
+        }
         LoadAndSetList();
     }
     public void cancelDailyVersionCheck(Context context, String RepoName) {
@@ -123,6 +146,7 @@ public class RepoEdit extends AppCompatActivity {
         if (getSharedPreferences("Repositories", MODE_PRIVATE).getString(RepoName, null) == null) {
             this.getSharedPreferences("Repositories", MODE_PRIVATE).edit() // All in string
                     .putInt("RepoCount", CurrentRepoCount + 1)
+                    .putInt("RepoIndex_" + RepoName, CurrentRepoCount + 1)
                     .putString(String.valueOf(CurrentRepoCount + 1), RepoName)
                     .putString(RepoName, RepoURL)
                     .apply();
@@ -176,6 +200,9 @@ public class RepoEdit extends AppCompatActivity {
                 success = true;
 
             } catch (Exception e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Failed to add repository", Toast.LENGTH_LONG).show();
+                });
                 Log.e("DownloadXml", "Error downloading or saving XML file.", e);
             } finally {
                 try {
@@ -183,6 +210,9 @@ public class RepoEdit extends AppCompatActivity {
                     if (inputStream != null) inputStream.close();
                     if (connection != null) connection.disconnect();
                 } catch (Exception e) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Failed to add repository", Toast.LENGTH_LONG).show();
+                    });
                     Log.e("DownloadXml", "Error closing streams.", e);
                 }
             }
@@ -228,6 +258,9 @@ public class RepoEdit extends AppCompatActivity {
 
             WriteRepo(RepoURL, RepoName);
         } catch (Exception e) {
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Failed to add repository", Toast.LENGTH_LONG).show();
+            });
             Log.e("XmlParser", "Error during XML parsing.", e);
         }
     }

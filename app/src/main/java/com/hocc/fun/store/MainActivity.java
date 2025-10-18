@@ -87,12 +87,14 @@ public class MainActivity extends AppCompatActivity {
             int CurrentRepoCount = getSharedPreferences("Repositories", MODE_PRIVATE).getInt("RepoCount", 0);
             this.getSharedPreferences("Repositories", MODE_PRIVATE).edit()
                     .putInt("RepoCount", CurrentRepoCount + 1)
+                    .putInt("RepoIndex_" + "HOCC", CurrentRepoCount + 1)
                     .putString(String.valueOf(CurrentRepoCount + 1), "HOCC")
                     .putString("HOCC", "https://raw.githubusercontent.com/HOCC2011/HOCC-Store-Repo/main")
                     .apply();
             CurrentRepoCount = getSharedPreferences("Repositories", MODE_PRIVATE).getInt("RepoCount", 0);
             this.getSharedPreferences("Repositories", MODE_PRIVATE).edit()
                     .putInt("RepoCount", CurrentRepoCount + 1)
+                    .putInt("RepoIndex_" + "Test", CurrentRepoCount + 1)
                     .putString(String.valueOf(CurrentRepoCount + 1), "Test")
                     .putString("Test", "https://raw.githubusercontent.com/HOCC2011/Store-Test-Repo/main")
                     .apply();
